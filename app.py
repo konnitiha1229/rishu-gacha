@@ -43,5 +43,9 @@ def recommend_all():
 
     return render_template('result.html', cards=gacha_cards, timetable=timetable_data)
 
+import os
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    # Renderが指定するポート番号を読み込む設定です
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
