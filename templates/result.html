@@ -2,69 +2,43 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <title>ガチャ結果！</title>
     <style>
-        body { background: #1a1a2e; color: white; font-family: sans-serif; text-align: center; overflow-x: hidden; }
-        
-        /* 1. ガチャカード並べる演出 */
-        .card-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; padding: 50px; }
-        .card {
-            width: 150px; height: 220px; background: linear-gradient(135deg, #6c5ce7, #a29bfe);
-            border-radius: 15px; display: flex; align-items: center; justify-content: center;
-            padding: 10px; font-weight: bold; font-size: 18px; color: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            transform: rotateY(90deg); opacity: 0;
-            animation: cardReveal 0.6s forwards;
+        body { background: #2d3436; color: white; font-family: sans-serif; text-align: center; padding: 50px; }
+        .card-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; }
+        .card { 
+            background: white; color: #333; padding: 20px; border-radius: 15px; 
+            width: 200px; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            animation: bounceIn 0.8s ease;
         }
-        @keyframes cardReveal {
-            to { transform: rotateY(0); opacity: 1; }
+        /* カフプラ（SSR）だけの特別演出 */
+        .ssr { 
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0); 
+            border: 5px solid #fdcb6e;
+            box-shadow: 0 0 30px #fdcb6e;
+            transform: scale(1.1);
         }
-
-        /* 2. 最後にドーンと出る時間割 */
-        #final-timetable { display: none; margin-top: 50px; animation: fadeIn 1s; }
-        table { margin: 20px auto; border-collapse: collapse; background: white; color: #333; border-radius: 10px; overflow: hidden; }
-        th, td { border: 1px solid #ddd; padding: 15px; width: 120px; }
-        th { background: #6c5ce7; color: white; }
-        .locked-cell { background: #ff7675; color: white; }
-
-        .btn-next { margin-top: 30px; padding: 15px 40px; background: #fdcb6e; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .btn-back { margin-top: 50px; padding: 10px 30px; background: #6c5ce7; color: white; text-decoration: none; border-radius: 20px; display: inline-block; }
     </style>
 </head>
 <body>
-
-    <div id="step1">
-        <h1>✨ 召喚結果 ✨</h1>
-        <div class="card-container">
-            {% for card in cards %}
-            <div class="card" style="animation-delay: {{ loop.index0 * 0.2 }}s;">
-                {{ card.name }}<br><small>({{card.day}}{{card.period}})</small>
-            </div>
-            {% endfor %}
+    <h1>運命の5件はこれだ！</h1>
+    <div class="card-container">
+        {% for res in results %}
+        <div class="card {{ 'ssr' if res.is_ssr else '' }}">
+            <h3>{{ res.name }}</h3>
+            <p>{{ res.day }}{{ res.period }}限</p>
+            <p>学科: {{ res.faculty }}</p>
+            <a href="{{ res.syllabus_url }}" target="_blank">シラバスを見る</a>
         </div>
-        <button class="btn-next" onclick="showTimetable()">時間割を確定する</button>
+        {% endfor %}
     </div>
-
-    <div id="final-timetable">
-        <h1>🗓️ 確定した運命の時間割</h1>
-        <table>
-            <tr><th>時限</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th></tr>
-            {% for row in timetable %}
-            <tr>
-                <td>{{ loop.index }}限</td>
-                {% for cell in row %}
-                <td class="{{ 'locked-cell' if cell.locked else '' }}">{{ cell.name }}</td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </table>
-        <a href="/"><button class="btn-next" style="background: #00b894;">もう一度回す</button></a>
-    </div>
-
-    <script>
-        function showTimetable() {
-            document.getElementById('step1').style.display = 'none';
-            document.getElementById('final-timetable').style.display = 'block';
-        }
-    </script>
+    <br>
+    <a href="/" class="btn-back">もう一度回す</a>
 </body>
 </html>
