@@ -1,89 +1,81 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>神引き！履修ガチャ</title>
-    <style>
-        :root { --main-color: #6c5ce7; --rare-color: #fdcb6e; --ssr-color: #ff7675; }
-        body { font-family: 'Helvetica Neue', sans-serif; background: #2d3436; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        
-        /* 時間割表のスタイル */
-        .timetable { border-collapse: separate; border-spacing: 5px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; }
-        th, td { width: 80px; height: 60px; text-align: center; border-radius: 8px; position: relative; background: rgba(255,255,255,0.05); }
-        
-        /* 必修ロックの見た目 */
-        input[type="checkbox"] { display: none; }
-        label { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; cursor: pointer; border-radius: 8px; transition: 0.2s; }
-        input[type="checkbox"]:checked + label { background: var(--ssr-color); box-shadow: 0 0 15px var(--ssr-color); }
-        input[type="checkbox"]:checked + label::after { content: '必修'; font-weight: bold; }
+<style>
+    /* 追加：レバーの演出 */
+    .lever-container { margin: 20px; text-align: center; }
+    .lever {
+        width: 100px; height: 100px; 
+        background: #555; border-radius: 10px;
+        position: relative; cursor: pointer; transition: 0.3s;
+    }
+    .lever-handle {
+        width: 20px; height: 60px; background: #ff7675;
+        position: absolute; top: -40px; left: 40px;
+        border-radius: 10px; transform-origin: bottom;
+        transition: 0.5s;
+    }
+    .lever.active .lever-handle { transform: rotate(150deg); } /* 引いた時の動き */
 
-        /* ガチャボタン（ソシャゲ風） */
-        .btn-gacha {
-            margin-top: 30px; padding: 20px 60px; font-size: 24px; font-weight: bold;
-            color: white; background: linear-gradient(45deg, #6c5ce7, #a29bfe);
-            border: none; border-radius: 50px; cursor: pointer;
-            box-shadow: 0 0 20px rgba(108, 92, 231, 0.5); transition: 0.3s;
-        }
-        .btn-gacha:hover { transform: scale(1.1) rotate(-2deg); box-shadow: 0 0 30px rgba(108, 92, 231, 0.8); }
+    /* 学科選択の装飾 */
+    .faculty-select {
+        padding: 10px; background: #444; color: white;
+        border: 2px solid var(--main-color); border-radius: 5px; margin-bottom: 20px;
+    }
+</style>
 
-        /* 演出用オーバーレイ */
-        #overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: black; z-index: 100; justify-content: center; align-items: center;
-            flex-direction: column;
-        }
-        .shining-light {
-            width: 100px; height: 100px; background: white; border-radius: 50%;
-            box-shadow: 0 0 100px 50px white, 0 0 200px 100px #74ebd5;
-            animation: burst 2s forwards;
-        }
-        @keyframes burst {
-            0% { transform: scale(0.1); opacity: 1; }
-            50% { transform: scale(5); opacity: 0.8; filter: hue-rotate(360deg); }
-            100% { transform: scale(50); opacity: 0; }
-        }
-        
-        /* 結果表示 */
-        #result-screen { display: none; text-align: center; z-index: 101; }
-        .card { background: white; color: #2d3436; padding: 15px; margin: 10px; border-radius: 10px; display: inline-block; width: 150px; animation: flipIn 0.5s backwards; }
-        @keyframes flipIn { from { transform: rotateY(90deg); opacity: 0; } to { transform: rotateY(0); opacity: 1; } }
-    </style>
-</head>
 <body>
-
     <h1>✨ 聖なる履修ガチャ ✨</h1>
-    <p>必修コマをタップして封印せよ！</p>
-
+    
     <form id="gacha-form" action="/recommend_all" method="POST">
+        <div>
+            <label>所属学科：</label>
+            <select name="faculty" class="faculty-select">
+                <option value="英米">英米学科</option>
+                <option value="二部英米">第2部英米学科</option>
+                <option value="イスパニア">イスパニア学科</option>
+                <option value="中国">中国学科</option>
+                <option value="ロシア">ロシア学科</option>
+            </select>
+        </div>
+
         <table class="timetable">
             <tr><th>限</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th></tr>
-            {% for period in range(1, 6) %}
-            <tr>
+            {% for period in range(1, 8) %} <tr>
                 <td>{{ period }}</td>
                 {% for day in ['月', '火', '水', '木', '金'] %}
                 <td>
                     <input type="checkbox" name="locked_slots" value="{{ day }}-{{ period }}" id="slot-{{ day }}-{{ period }}">
-                    <label for="slot-{{ day }}-{{ period }}"></label>
+                    <label for="slot-{{ day }}-{{ period }}">
+                        {% if day == '水' and period == 4 %}
+                         <span style="font-size: 10px; color: #fdcb6e;">カフプラ固定</span>
+                        {% endif %}
+                    </label>
                 </td>
                 {% endfor %}
             </tr>
             {% endfor %}
         </table>
-        <button type="button" class="btn-gacha" onclick="startGacha()">10連（25連）ガチャを回す！</button>
+
+        <div class="lever-container" onclick="pullLever()">
+            <div class="lever" id="main-lever">
+                <div class="lever-handle"></div>
+            </div>
+            <p>レバーを引いて召喚！</p>
+        </div>
     </form>
 
-    <div id="overlay"><div class="shining-light"></div><h2 id="loading-text">召喚中...</h2></div>
+    <div id="overlay"><div class="shining-light"></div><h2 id="loading-text">カフプラ召喚中...</h2></div>
 
     <script>
-        function startGacha() {
-            // 演出開始
-            document.getElementById('overlay').style.display = 'flex';
+        function pullLever() {
+            // レバーを動かす
+            document.getElementById('main-lever').classList.add('active');
             
-            // 2秒後に本番の送信を実行（ソシャゲのロード待ち風）
+            // 0.5秒後にガチャ演出開始
             setTimeout(() => {
-                document.getElementById('gacha-form').submit();
-            }, 2000);
+                document.getElementById('overlay').style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('gacha-form').submit();
+                }, 2000);
+            }, 500);
         }
     </script>
 </body>
-</html>
